@@ -857,7 +857,8 @@ class HomeSecondaryTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        // OSN: chrome monocromatica — barra titolo pagina uguale allo sfondo
+        color: Theme.of(context).colorScheme.surface,
       ),
       height: HomeSizes.topBarHeight + HomeInsets.topBarTitleVerticalPadding,
       child: Padding(
