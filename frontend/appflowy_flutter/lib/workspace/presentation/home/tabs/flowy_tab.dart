@@ -48,7 +48,8 @@ class _FlowyTabState extends State<FlowyTab> {
             borderRadius: BorderRadius.zero,
             backgroundColor: widget.isCurrent
                 ? Theme.of(context).colorScheme.surface
-                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                // OSN: chrome monocromatica — tab non attivi uguali allo sfondo pagine
+                : Theme.of(context).colorScheme.surface,
             hoverColor:
                 widget.isCurrent ? Theme.of(context).colorScheme.surface : null,
           ),
