@@ -74,7 +74,8 @@ class _WindowTitleBarState extends State<WindowTitleBar> {
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        // OSN: chrome monocromatica — barra titolo finestra uguale allo sfondo pagine
+        color: Theme.of(context).colorScheme.surface,
       ),
       child: DragToMoveArea(
         child: Row(

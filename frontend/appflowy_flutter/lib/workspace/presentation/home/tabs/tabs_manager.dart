@@ -28,7 +28,8 @@ class TabsManager extends StatelessWidget {
           alignment: Alignment.bottomLeft,
           height: HomeSizes.tabBarHeight,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            // OSN: chrome monocromatica — barra tab uguale allo sfondo pagine
+            color: Theme.of(context).colorScheme.surface,
           ),
           child: MoveWindowDetector(
             child: Row(

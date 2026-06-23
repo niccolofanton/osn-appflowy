@@ -335,7 +335,8 @@ class _SidebarState extends State<_Sidebar> {
       onExit: (_) => _isHovered.value = false,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          // OSN: chrome monocromatica — usa surface (= sfondo pagine) invece di surfaceContainerHighest
+          color: Theme.of(context).colorScheme.surface,
           border: Border(
             right: BorderSide(color: Theme.of(context).dividerColor),
           ),
