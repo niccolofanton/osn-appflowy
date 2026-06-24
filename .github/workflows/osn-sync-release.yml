@@ -82,14 +82,17 @@ jobs:
           set -euo pipefail
           git config user.name "osn-bot"
           git config user.email "osn-bot@users.noreply.github.com"
-          git remote add upstream "https://github.com/${UPSTREAM}.git"
-          git fetch --tags upstream "$VERSION"
-          # commit di patch = OSN_BRANCH meno l'antenato comune col tag upstream
-          BASE=$(git merge-base "$OSN_BRANCH" "$VERSION")
-          echo "rebase --onto $VERSION $BASE  (patch: $(git rev-list --count ${BASE}..${OSN_BRANCH}) commit)"
-          git checkout -B "$BUILD_BRANCH" "$OSN_BRANCH"
+          git remote add upstream "https://github.com/${UPSTREAM}.git" || true
+          # fetcha SOLO il tag upstream in un ref dedicato: niente --tags (evita il clobber
+          # dei tag del mirror origin) e niente ref locale ambiguo "osn"
+          git fetch --no-tags --force upstream "refs/tags/${VERSION}:refs/osn-upstream/${VERSION}"
+          TARGET="refs/osn-upstream/${VERSION}"
+          # commit di patch = osn meno l'antenato comune col tag upstream
+          BASE=$(git merge-base "origin/${OSN_BRANCH}" "$TARGET")
+          echo "rebase --onto $TARGET $BASE  (patch: $(git rev-list --count ${BASE}..origin/${OSN_BRANCH}) commit)"
+          git checkout -B "$BUILD_BRANCH" "origin/${OSN_BRANCH}"
           # se il rebase entra in conflitto, fallisce: niente release silenziosa sbagliata
-          git rebase --onto "$VERSION" "$BASE" "$BUILD_BRANCH"
+          git rebase --onto "$TARGET" "$BASE" "$BUILD_BRANCH"
           git push --force origin "$BUILD_BRANCH"
 
       - name: Crea release (draft)
