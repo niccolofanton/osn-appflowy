@@ -25,9 +25,16 @@ import 'package:provider/provider.dart';
 /// ShareMenu viene aperto in un dialog con i BLoC forniti esplicitamente
 /// (stessi di ShareButton/ShareMenuButton).
 class ShareMenuAction extends StatelessWidget {
-  const ShareMenuAction({super.key, required this.view});
+  const ShareMenuAction({
+    super.key,
+    required this.view,
+    required this.workspaceBloc,
+  });
 
   final ViewPB view;
+
+  /// Passato dall'header: l'overlay del menu non eredita UserWorkspaceBloc.
+  final UserWorkspaceBloc workspaceBloc;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +47,6 @@ class ShareMenuAction extends StatelessWidget {
   }
 
   void _openShareDialog(BuildContext context) {
-    final workspaceBloc = context.read<UserWorkspaceBloc>();
     final workspaceId = workspaceBloc.state.currentWorkspace?.workspaceId ?? '';
     final workspaceType = workspaceBloc.state.currentWorkspace?.workspaceType;
 
