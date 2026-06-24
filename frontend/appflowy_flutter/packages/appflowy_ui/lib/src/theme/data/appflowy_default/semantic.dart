@@ -96,10 +96,11 @@ class AppFlowyDefaultTheme implements AppFlowyThemeBuilder {
       contentHover: AppFlowyPrimitiveTokens.neutralAlphaGrey100005,
       contentVisible: AppFlowyPrimitiveTokens.neutralAlphaGrey100005,
       contentVisibleHover: AppFlowyPrimitiveTokens.neutralAlphaGrey100010,
-      themeThick: AppFlowyPrimitiveTokens.blue500,
-      themeThickHover: AppFlowyPrimitiveTokens.blue600,
-      themeSelect: AppFlowyPrimitiveTokens.blueAlphaBlue50015,
-      textSelect: AppFlowyPrimitiveTokens.blueAlphaBlue50020,
+      // OSN: accent Notion + selezione
+      themeThick: const Color(0xFF2383E2),
+      themeThickHover: const Color(0xFF1A6CC2),
+      themeSelect: const Color(0x472383E2),
+      textSelect: const Color(0x472383E2),
       infoLight: AppFlowyPrimitiveTokens.blue100,
       infoLightHover: AppFlowyPrimitiveTokens.blue200,
       infoThick: AppFlowyPrimitiveTokens.blue500,
@@ -312,15 +313,16 @@ class AppFlowyDefaultTheme implements AppFlowyThemeBuilder {
     final shadow = AppFlowySharedTokens.buildShadow(Brightness.dark);
 
     final textColorScheme = AppFlowyTextColorScheme(
-      primary: AppFlowyPrimitiveTokens.neutral200,
-      secondary: AppFlowyPrimitiveTokens.neutral500,
-      tertiary: AppFlowyPrimitiveTokens.neutral600,
-      quaternary: AppFlowyPrimitiveTokens.neutral1000,
+      // OSN: testo Notion (bianco translucido) + accent #2383e2
+      primary: const Color(0xCFFFFFFF),
+      secondary: const Color(0x75FFFFFF),
+      tertiary: const Color(0x48FFFFFF),
+      quaternary: const Color(0x30FFFFFF),
       onFill: AppFlowyPrimitiveTokens.neutralWhite,
-      action: AppFlowyPrimitiveTokens.blue500,
-      actionHover: AppFlowyPrimitiveTokens.blue400,
-      info: AppFlowyPrimitiveTokens.blue500,
-      infoHover: AppFlowyPrimitiveTokens.blue400,
+      action: const Color(0xFF2383E2),
+      actionHover: const Color(0xFF529AE8),
+      info: const Color(0xFF2383E2),
+      infoHover: const Color(0xFF529AE8),
       success: AppFlowyPrimitiveTokens.green600,
       successHover: AppFlowyPrimitiveTokens.green500,
       warning: AppFlowyPrimitiveTokens.orange600,
@@ -332,12 +334,13 @@ class AppFlowyDefaultTheme implements AppFlowyThemeBuilder {
     );
 
     final iconColorScheme = AppFlowyIconColorScheme(
-      primary: AppFlowyPrimitiveTokens.neutral200,
-      secondary: AppFlowyPrimitiveTokens.neutral400,
-      tertiary: AppFlowyPrimitiveTokens.neutral600,
-      quaternary: AppFlowyPrimitiveTokens.neutral1000,
-      infoThick: AppFlowyPrimitiveTokens.blue500,
-      infoThickHover: AppFlowyPrimitiveTokens.blue400,
+      // OSN: icone Notion (bianco translucido) + accent
+      primary: const Color(0xCFFFFFFF),
+      secondary: const Color(0x75FFFFFF),
+      tertiary: const Color(0x48FFFFFF),
+      quaternary: const Color(0x30FFFFFF),
+      infoThick: const Color(0xFF2383E2),
+      infoThickHover: const Color(0xFF529AE8),
       successThick: AppFlowyPrimitiveTokens.green600,
       successThickHover: AppFlowyPrimitiveTokens.green500,
       warningThick: AppFlowyPrimitiveTokens.orange600,
@@ -350,16 +353,17 @@ class AppFlowyDefaultTheme implements AppFlowyThemeBuilder {
     );
 
     final borderColorScheme = AppFlowyBorderColorScheme(
-      primary: AppFlowyPrimitiveTokens.neutral800,
-      primaryHover: AppFlowyPrimitiveTokens.neutral700,
+      // OSN: bordi Notion sottili (bianco translucido) + accent
+      primary: const Color(0x18FFFFFF),
+      primaryHover: const Color(0x24FFFFFF),
       secondary: AppFlowyPrimitiveTokens.neutral300,
       secondaryHover: AppFlowyPrimitiveTokens.neutral200,
       tertiary: AppFlowyPrimitiveTokens.neutral100,
       tertiaryHover: AppFlowyPrimitiveTokens.neutralWhite,
-      themeThick: AppFlowyPrimitiveTokens.blue500,
-      themeThickHover: AppFlowyPrimitiveTokens.blue600,
-      infoThick: AppFlowyPrimitiveTokens.blue500,
-      infoThickHover: AppFlowyPrimitiveTokens.blue400,
+      themeThick: const Color(0xFF2383E2),
+      themeThickHover: const Color(0xFF1A6CC2),
+      infoThick: const Color(0xFF2383E2),
+      infoThickHover: const Color(0xFF529AE8),
       successThick: AppFlowyPrimitiveTokens.green600,
       successThickHover: AppFlowyPrimitiveTokens.green500,
       warningThick: AppFlowyPrimitiveTokens.orange600,
@@ -371,8 +375,9 @@ class AppFlowyDefaultTheme implements AppFlowyThemeBuilder {
     );
 
     final fillColorScheme = AppFlowyFillColorScheme(
-      primary: AppFlowyPrimitiveTokens.neutral900,
-      primaryHover: AppFlowyPrimitiveTokens.neutral800,
+      // OSN: fill Notion (hover item/menu)
+      primary: const Color(0xFF202020),
+      primaryHover: const Color(0xFF252525),
       secondary: AppFlowyPrimitiveTokens.neutral600,
       secondaryHover: AppFlowyPrimitiveTokens.neutral500,
       tertiary: AppFlowyPrimitiveTokens.neutral300,
@@ -383,10 +388,11 @@ class AppFlowyDefaultTheme implements AppFlowyThemeBuilder {
       contentHover: AppFlowyPrimitiveTokens.neutralAlphaGrey10005,
       contentVisible: AppFlowyPrimitiveTokens.neutralAlphaGrey10005,
       contentVisibleHover: AppFlowyPrimitiveTokens.neutralAlphaGrey10010,
-      themeThick: AppFlowyPrimitiveTokens.blue500,
-      themeThickHover: AppFlowyPrimitiveTokens.blue600,
-      themeSelect: AppFlowyPrimitiveTokens.blueAlphaBlue50015,
-      textSelect: AppFlowyPrimitiveTokens.blueAlphaBlue50020,
+      // OSN: accent Notion + selezione
+      themeThick: const Color(0xFF2383E2),
+      themeThickHover: const Color(0xFF1A6CC2),
+      themeSelect: const Color(0x472383E2),
+      textSelect: const Color(0x472383E2),
       infoLight: AppFlowyPrimitiveTokens.blue200,
       infoLightHover: AppFlowyPrimitiveTokens.blue100,
       infoThick: AppFlowyPrimitiveTokens.blue500,
@@ -406,30 +412,33 @@ class AppFlowyDefaultTheme implements AppFlowyThemeBuilder {
       featuredThickHover: AppFlowyPrimitiveTokens.purple400,
     );
 
+    // OSN: superfici Notion (popover, dialog, card, menu, impostazioni)
     final surfaceColorScheme = AppFlowySurfaceColorScheme(
-      primary: AppFlowyPrimitiveTokens.neutral900,
-      primaryHover: AppFlowyPrimitiveTokens.neutral800,
-      layer01: AppFlowyPrimitiveTokens.neutral900,
-      layer01Hover: AppFlowyPrimitiveTokens.neutral800,
-      layer02: AppFlowyPrimitiveTokens.neutral850,
-      layer02Hover: AppFlowyPrimitiveTokens.neutral800,
-      layer03: AppFlowyPrimitiveTokens.neutral850,
-      layer03Hover: AppFlowyPrimitiveTokens.neutral800,
-      layer04: AppFlowyPrimitiveTokens.neutral830,
-      layer04Hover: AppFlowyPrimitiveTokens.neutral800,
-      inverse: AppFlowyPrimitiveTokens.neutral800,
-      secondary: AppFlowyPrimitiveTokens.neutral800,
-      overlay: AppFlowyPrimitiveTokens.neutralAlphaBlack60,
+      primary: const Color(0xFF191919),
+      primaryHover: const Color(0xFF252525),
+      layer01: const Color(0xFF202020),
+      layer01Hover: const Color(0xFF252525),
+      layer02: const Color(0xFF252525),
+      layer02Hover: const Color(0xFF2F2F2F),
+      layer03: const Color(0xFF2F2F2F),
+      layer03Hover: const Color(0xFF373737),
+      layer04: const Color(0xFF373737),
+      layer04Hover: const Color(0xFF3D3D3D),
+      inverse: const Color(0xFF373737),
+      secondary: const Color(0xFF202020),
+      overlay: const Color(0x99000000),
     );
 
+    // OSN: container Notion
     final surfaceContainerColorScheme = AppFlowySurfaceContainerColorScheme(
-      layer01: AppFlowyPrimitiveTokens.neutral900,
-      layer02: AppFlowyPrimitiveTokens.neutral800,
-      layer03: AppFlowyPrimitiveTokens.neutral700,
+      layer01: const Color(0xFF202020),
+      layer02: const Color(0xFF252525),
+      layer03: const Color(0xFF2F2F2F),
     );
 
+    // OSN: sfondo app Notion
     final backgroundColorScheme = AppFlowyBackgroundColorScheme(
-      primary: AppFlowyPrimitiveTokens.neutral1000,
+      primary: const Color(0xFF191919),
     );
 
     final badgeColorScheme = AppFlowyBadgeColorScheme(
