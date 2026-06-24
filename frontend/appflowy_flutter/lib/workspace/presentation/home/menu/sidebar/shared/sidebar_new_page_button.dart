@@ -40,11 +40,11 @@ class _SidebarNewPageButtonState extends State<SidebarNewPageButton> {
       height: HomeSizes.newPageSectionHeight,
       child: FlowyButton(
         onTap: () async => _createNewPage(),
+        // OSN: icona "+" semplice (come il fork web) al posto di new_app_m
         leftIcon: const FlowySvg(
-          FlowySvgs.new_app_m,
-          blendMode: null,
+          FlowySvgs.add_m,
         ),
-        leftIconSize: const Size.square(24.0),
+        leftIconSize: const Size.square(20.0),
         margin: const EdgeInsets.only(left: 4.0),
         iconPadding: 8.0,
         text: FlowyText.regular(

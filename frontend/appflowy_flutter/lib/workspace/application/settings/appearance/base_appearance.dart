@@ -3,14 +3,12 @@ import 'package:flowy_infra/size.dart';
 import 'package:flowy_infra/theme.dart';
 import 'package:flutter/material.dart';
 
-// the default font family is empty, so we can use the default font family of the platform
-// the system will choose the default font family of the platform
-// iOS: San Francisco
-// Android: Roboto
-// Desktop: Based on the OS
-const defaultFontFamily = '';
+// OSN: font di default dell'app = Geist (bundlato in assets/google_fonts/Geist).
+// Essendo in _defaultFontFamilies, getGoogleFontSafely lo risolve direttamente
+// dagli asset via TextStyle(fontFamily: 'Geist') senza passare da Google Fonts.
+const defaultFontFamily = 'Geist';
 
-const builtInCodeFontFamily = 'RobotoMono';
+const builtInCodeFontFamily = 'Geist Mono';
 
 abstract class BaseAppearance {
   final white = const Color(0xFFFFFFFF);
