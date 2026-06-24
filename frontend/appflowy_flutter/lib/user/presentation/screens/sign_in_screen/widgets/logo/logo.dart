@@ -11,9 +11,11 @@ class AFLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // OSN: logo monocromo che segue il tema (bianco su dark, nero su light),
+    // coerente con l'icona app B/N. Niente blendMode:null = applica il tint.
     return FlowySvg(
       FlowySvgs.app_logo_xl,
-      blendMode: null,
+      color: Theme.of(context).colorScheme.onSurface,
       size: size,
     );
   }

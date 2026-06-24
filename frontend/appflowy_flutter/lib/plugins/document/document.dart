@@ -203,24 +203,29 @@ class DocumentPluginWidgetBuilder extends PluginWidgetBuilder
               ? [
                   DocumentCollaborators(
                     key: ValueKey('collaborators_${view.id}'),
-                    width: 120,
-                    height: 32,
+                    // OSN: stack avatar collaboratori -20%
+                    width: 104,
+                    height: 26,
                     view: view,
                   ),
                   const HSpace(16),
                 ]
               : [const HSpace(8)],
-          ShareButton(
-            key: ValueKey('share_button_${view.id}'),
-            view: view,
-          ),
-          const HSpace(10),
+          // OSN: "Condividi" tolto dall'header e spostato nel menu "..."
           ViewFavoriteButton(
             key: ValueKey('favorite_button_${view.id}'),
             view: view,
           ),
           const HSpace(4),
-          MoreViewActions(view: view),
+          MoreViewActions(
+            view: view,
+            customActions: [
+              ShareButton(
+                key: ValueKey('share_button_${view.id}'),
+                view: view,
+              ),
+            ],
+          ),
         ],
       ),
     );
