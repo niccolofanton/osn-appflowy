@@ -398,12 +398,7 @@ class _SidebarState extends State<_Sidebar> {
 
             _renderFolderOrSpace(menuHorizontalInset),
 
-            // trash
-            Padding(
-              padding: menuHorizontalInset +
-                  const EdgeInsets.symmetric(horizontal: 4.0),
-              child: const FlowyDivider(),
-            ),
+            // OSN: divider orizzontale sopra il footer rimosso (estetica Notion)
             const VSpace(8),
 
             _renderUpgradeSpaceButton(menuHorizontalInset),

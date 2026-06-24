@@ -45,8 +45,8 @@ class SidebarTemplateButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SidebarFooterButton(
-      // OSN: icone footer -15% (16 -> 14)
-      leftIconSize: const Size.square(14.0),
+      // OSN: icone footer compatte (16 -> 12)
+      leftIconSize: const Size.square(12.0),
       leftIcon: const FlowySvg(
         FlowySvgs.icon_template_s,
       ),
@@ -65,8 +65,8 @@ class SidebarTrashButton extends StatelessWidget {
       valueListenable: getIt<MenuSharedState>().notifier,
       builder: (context, value, child) {
         return SidebarFooterButton(
-          // OSN: icone footer -15% (18 -> 15)
-          leftIconSize: const Size.square(15.0),
+          // OSN: icone footer compatte (18 -> 12)
+          leftIconSize: const Size.square(12.0),
           leftIcon: const FlowySvg(
             FlowySvgs.icon_delete_s,
           ),
