@@ -10,7 +10,7 @@ import 'package:appflowy/plugins/database/application/tab_bar_bloc.dart';
 import 'package:appflowy/plugins/database/grid/presentation/layout/sizes.dart';
 import 'package:appflowy/plugins/document/presentation/compact_mode_event.dart';
 import 'package:appflowy/plugins/document/presentation/editor_plugins/database/database_view_block_component.dart';
-import 'package:appflowy/plugins/shared/share/share_button.dart';
+import 'package:appflowy/plugins/shared/share/share_menu_action.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/startup/plugin/plugin.dart';
 import 'package:appflowy/startup/startup.dart';
@@ -493,7 +493,7 @@ class DatabasePluginWidgetBuilder extends PluginWidgetBuilder {
           MoreViewActions(
             view: view,
             customActions: [
-              ShareButton(key: ValueKey(view.id), view: view),
+              ShareMenuAction(key: ValueKey(view.id), view: view),
             ],
           ),
         ],
