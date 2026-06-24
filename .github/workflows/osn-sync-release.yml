@@ -1,0 +1,427 @@
+name: osn-sync-release
+
+# Insegue le release di AppFlowy upstream, riapplica le patch del branch `osn`,
+# builda macOS(arm64)/Windows/Linux con firma ad-hoc, genera+firma gli appcast
+# Sparkle (EdDSA su macOS, DSA su Windows) e pubblica tutto come release di QUESTO
+# repo. Il client desktop osn punta a questi appcast (vedi auto_update_task.dart).
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # ogni giorno alle 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      force_tag:
+        description: "Tag upstream da buildare (vuoto = ultima release upstream)"
+        required: false
+        default: ""
+      only:
+        description: "Builda solo una piattaforma: all | macos | windows | linux"
+        required: false
+        default: "all"
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: "3.27.4"
+  RUST_TOOLCHAIN: "1.85.0"
+  UPSTREAM: AppFlowy-IO/AppFlowy
+  # branch con le nostre patch (sorgente di verità)
+  OSN_BRANCH: osn
+  # branch di servizio: patch riapplicate sul tag upstream da buildare
+  BUILD_BRANCH: osn-build
+
+jobs:
+  # 1) Determina se c'è una nuova release upstream da inseguire.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.decide.outputs.should_build }}
+      version: ${{ steps.decide.outputs.version }}
+    steps:
+      - name: Decide target version
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ github.event.inputs.force_tag }}" ]; then
+            VERSION="${{ github.event.inputs.force_tag }}"
+          else
+            VERSION=$(gh release view --repo "$UPSTREAM" --json tagName -q .tagName)
+          fi
+          echo "upstream target: $VERSION"
+          # ultima release già pubblicata su QUESTO repo
+          OURS=$(gh release view --repo "${{ github.repository }}" --json tagName -q .tagName 2>/dev/null || echo "")
+          echo "our latest: ${OURS:-<none>}"
+          if [ "$VERSION" = "$OURS" ] && [ "${{ github.event.inputs.force_tag }}" = "" ]; then
+            echo "Già allineati a $VERSION, niente da fare."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  # 2) Riapplica le patch osn sul tag upstream e crea la release (draft).
+  prepare:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.OSN_BRANCH }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebase patch osn sul tag upstream
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "osn-bot"
+          git config user.email "osn-bot@users.noreply.github.com"
+          git remote add upstream "https://github.com/${UPSTREAM}.git"
+          git fetch --tags upstream "$VERSION"
+          # commit di patch = OSN_BRANCH meno l'antenato comune col tag upstream
+          BASE=$(git merge-base "$OSN_BRANCH" "$VERSION")
+          echo "rebase --onto $VERSION $BASE  (patch: $(git rev-list --count ${BASE}..${OSN_BRANCH}) commit)"
+          git checkout -B "$BUILD_BRANCH" "$OSN_BRANCH"
+          # se il rebase entra in conflitto, fallisce: niente release silenziosa sbagliata
+          git rebase --onto "$VERSION" "$BASE" "$BUILD_BRANCH"
+          git push --force origin "$BUILD_BRANCH"
+
+      - name: Crea release (draft)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$VERSION" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release create "$VERSION" \
+              --repo "${{ github.repository }}" \
+              --title "AppFlowy $VERSION (osn build)" \
+              --notes "Rebuild automatica del fork osn su AppFlowy upstream $VERSION (tema monocromatico + icona). Vedi https://github.com/${UPSTREAM}/releases/tag/$VERSION per le note originali." \
+              --draft
+          fi
+
+  # 3) macOS arm64 — build, firma ad-hoc, zip+dmg, firma EdDSA + appcast
+  build-macos:
+    needs: [check, prepare]
+    if: needs.check.outputs.should_build == 'true' && (github.event.inputs.only == 'all' || github.event.inputs.only == 'macos' || github.event.inputs.only == '')
+    runs-on: macos-14
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      RELEASE_PATH: frontend/appflowy_flutter/product/${{ needs.check.outputs.version }}/macos/Release
+      ZIP_NAME: AppFlowy-${{ needs.check.outputs.version }}-macos-arm64.zip
+      DMG_NAME: AppFlowy-${{ needs.check.outputs.version }}-macos-arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_BRANCH }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: aarch64-apple-darwin
+          components: rustfmt
+
+      - name: Install prerequisites
+        working-directory: frontend
+        run: |
+          cargo install --force --locked cargo-make
+          cargo install --force --locked duckscript_cli
+
+      - name: Build AppFlowy (arm64)
+        working-directory: frontend
+        run: |
+          flutter config --enable-macos-desktop
+          cargo make --env APP_VERSION=$VERSION --profile production-mac-arm64 appflowy
+
+      - name: Firma ad-hoc + hardened runtime
+        run: |
+          codesign --force --deep --options runtime --sign - "$RELEASE_PATH/AppFlowy.app"
+          codesign --verify --deep --strict "$RELEASE_PATH/AppFlowy.app"
+
+      - name: Crea dmg
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "$DMG_NAME" \
+            --hide-extension "AppFlowy.app" \
+            --window-size 600 450 --icon-size 94 \
+            --icon "AppFlowy.app" 141 249 --app-drop-link 458 249 \
+            "$RELEASE_PATH/$DMG_NAME.dmg" "$RELEASE_PATH/AppFlowy.app" || true
+
+      - name: Archivia .app in zip (per Sparkle)
+        working-directory: ${{ env.RELEASE_PATH }}
+        run: zip --symlinks -qr "$ZIP_NAME" AppFlowy.app
+
+      - name: Firma EdDSA + genera appcast-macos-arm64.xml
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          SIGN_TOOL=frontend/appflowy_flutter/macos/Pods/Sparkle/bin/sign_update
+          ZIP="$RELEASE_PATH/$ZIP_NAME"
+          # sign_update stampa gli attributi pronti: sparkle:edSignature="..." length="..."
+          # la chiave privata EdDSA si passa da stdin con --ed-key-file -
+          SIG_ATTRS=$(echo "$SPARKLE_ED_PRIVATE_KEY" | "$SIGN_TOOL" --ed-key-file - "$ZIP")
+          URL="https://github.com/${{ github.repository }}/releases/download/$VERSION/$ZIP_NAME"
+          PUBDATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
+          cat > appcast-macos-arm64.xml <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>AppFlowy osn</title>
+              <item>
+                <title>$VERSION</title>
+                <pubDate>$PUBDATE</pubDate>
+                <sparkle:version>$VERSION</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <enclosure url="$URL" sparkle:os="macos" $SIG_ATTRS type="application/octet-stream" />
+              </item>
+            </channel>
+          </rss>
+          EOF
+          cat appcast-macos-arm64.xml
+
+      - name: Upload asset macOS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$VERSION" --repo "${{ github.repository }}" --clobber \
+            "$RELEASE_PATH/$ZIP_NAME" \
+            "$RELEASE_PATH/$DMG_NAME.dmg" \
+            "appcast-macos-arm64.xml"
+
+  # 4) Windows x86_64 — build, zip, installer
+  build-windows:
+    needs: [check, prepare]
+    if: needs.check.outputs.should_build == 'true' && (github.event.inputs.only == 'all' || github.event.inputs.only == 'windows' || github.event.inputs.only == '')
+    runs-on: windows-2019
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      RELEASE_PATH: frontend\appflowy_flutter\product\${{ needs.check.outputs.version }}\windows
+      ZIP_NAME: AppFlowy-${{ needs.check.outputs.version }}-windows-x86_64.zip
+      INSTALLER_NAME: AppFlowy-${{ needs.check.outputs.version }}-windows-x86_64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_BRANCH }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: x86_64-pc-windows-msvc
+          components: rustfmt
+
+      - name: Install prerequisites
+        working-directory: frontend
+        run: |
+          vcpkg integrate install
+          cargo install --force --locked cargo-make
+          cargo install --force --locked duckscript_cli
+
+      - name: Build Windows app
+        working-directory: frontend
+        run: |
+          flutter config --enable-windows-desktop
+          dart ./scripts/flutter_release_build/build_flowy.dart exclude-directives . $env:VERSION
+          cargo make --env APP_VERSION=$env:VERSION --profile production-windows-x86 appflowy
+          dart ./scripts/flutter_release_build/build_flowy.dart include-directives . $env:VERSION
+
+      - name: Archive zip
+        uses: vimtor/action-zip@v1
+        with:
+          files: ${{ env.RELEASE_PATH }}\
+          dest: ${{ env.RELEASE_PATH }}\${{ env.ZIP_NAME }}
+
+      - name: Copy installer config & icon
+        working-directory: frontend
+        run: cp scripts/windows_installer/* ..\${{ env.RELEASE_PATH }}
+
+      - name: Build installer (.exe)
+        working-directory: ${{ env.RELEASE_PATH }}
+        run: iscc /F${{ env.INSTALLER_NAME }} inno_setup_config.iss /DAppVersion=${{ needs.check.outputs.version }}
+
+      - name: Upload asset Windows
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$VERSION" --repo "${{ github.repository }}" --clobber \
+            "$RELEASE_PATH/$ZIP_NAME" \
+            "$RELEASE_PATH/Output/$INSTALLER_NAME.exe"
+
+  # 5) Linux x86_64 — build, deb/rpm/AppImage/tar.gz
+  build-linux:
+    needs: [check, prepare]
+    if: needs.check.outputs.should_build == 'true' && (github.event.inputs.only == 'all' || github.event.inputs.only == 'linux' || github.event.inputs.only == '')
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      RELEASE_PATH: frontend/appflowy_flutter/product/${{ needs.check.outputs.version }}/linux/Release
+      TAR_NAME: AppFlowy-${{ needs.check.outputs.version }}-linux-x86_64.tar.gz
+      DEB_NAME: AppFlowy-${{ needs.check.outputs.version }}-linux-x86_64.deb
+      RPM_NAME: AppFlowy-${{ needs.check.outputs.version }}-linux-x86_64.rpm
+      TMP_RPM_NAME: AppFlowy-${{ needs.check.outputs.version }}-2.x86_64.rpm
+      TMP_APPIMAGE_NAME: AppFlowy-${{ needs.check.outputs.version }}-x86_64.AppImage
+      APPIMAGE_NAME: AppFlowy-${{ needs.check.outputs.version }}-linux-x86_64.AppImage
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_BRANCH }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: x86_64-unknown-linux-gnu
+          components: rustfmt
+
+      - name: Install prerequisites
+        working-directory: frontend
+        run: |
+          sudo wget -qO /etc/apt/trusted.gpg.d/dart_linux_signing_key.asc https://dl-ssl.google.com/linux/linux_signing_key.pub
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsqlite3-dev libssl-dev clang cmake ninja-build pkg-config libgtk-3-dev libcurl4-openssl-dev
+          sudo apt-get install -y keybinder-3.0 alien libnotify-dev libfuse2
+          source $HOME/.cargo/env
+          cargo install --force --locked cargo-make
+          cargo install --force --locked duckscript_cli
+          rustup target add x86_64-unknown-linux-gnu
+
+      - name: Build AppFlowy
+        working-directory: frontend
+        run: |
+          flutter config --enable-linux-desktop
+          dart ./scripts/flutter_release_build/build_flowy.dart run . $VERSION
+
+      - name: Archive tar.gz
+        working-directory: ${{ env.RELEASE_PATH }}
+        run: tar -czf "$TAR_NAME" *
+
+      - name: Build .deb
+        working-directory: frontend
+        run: sh scripts/linux_distribution/deb/build_deb.sh appflowy_flutter/product/$VERSION/linux/Release $VERSION "$DEB_NAME"
+
+      - name: Build .rpm
+        working-directory: ${{ env.RELEASE_PATH }}
+        run: |
+          sudo alien -r "$DEB_NAME"
+          cp -r "$TMP_RPM_NAME" "$RPM_NAME"
+
+      - name: Build .AppImage
+        working-directory: frontend
+        continue-on-error: true
+        run: |
+          sh scripts/linux_distribution/appimage/build_appimage.sh $VERSION
+          cp -r "$TMP_APPIMAGE_NAME" "../$RELEASE_PATH/$APPIMAGE_NAME"
+
+      - name: Upload asset Linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$RELEASE_PATH"
+          gh release upload "$VERSION" --repo "${{ github.repository }}" --clobber \
+            "$TAR_NAME" "$DEB_NAME" "$RPM_NAME" "$APPIMAGE_NAME" || \
+          gh release upload "$VERSION" --repo "${{ github.repository }}" --clobber \
+            "$TAR_NAME" "$DEB_NAME" "$RPM_NAME"
+
+  # 6) Appcast Windows (firma DSA) + appcast Linux (info-only)
+  appcast-extra:
+    needs: [check, build-windows, build-linux]
+    if: always() && needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_BRANCH }}
+
+      - name: Appcast Windows (DSA) — se l'asset esiste
+        if: needs.build-windows.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SPARKLE_DSA_PRIVATE_KEY: ${{ secrets.SPARKLE_DSA_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          ASSET="AppFlowy-$VERSION-windows-x86_64.zip"
+          gh release download "$VERSION" --repo "${{ github.repository }}" -p "$ASSET" -D dl
+          echo "$SPARKLE_DSA_PRIVATE_KEY" > dsa_priv.pem
+          # firma DSA stile WinSparkle su digest SHA1 (forma compatibile OpenSSL 3, -dss1 rimosso)
+          SIG=$(openssl dgst -sha1 -sign dsa_priv.pem "dl/$ASSET" | openssl base64 -A)
+          rm -f dsa_priv.pem
+          LEN=$(stat -c%s "dl/$ASSET")
+          URL="https://github.com/${{ github.repository }}/releases/download/$VERSION/$ASSET"
+          PUBDATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
+          cat > appcast-windows-x86_64.xml <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>AppFlowy osn</title>
+              <item>
+                <title>$VERSION</title>
+                <pubDate>$PUBDATE</pubDate>
+                <sparkle:version>$VERSION</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <enclosure url="$URL" sparkle:os="windows" sparkle:dsaSignature="$SIG" length="$LEN" type="application/octet-stream" />
+              </item>
+            </channel>
+          </rss>
+          EOF
+          gh release upload "$VERSION" --repo "${{ github.repository }}" --clobber appcast-windows-x86_64.xml
+
+      - name: Appcast Linux (info-only, no firma)
+        if: needs.build-linux.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          URL="https://github.com/${{ github.repository }}/releases/download/$VERSION/AppFlowy-$VERSION-linux-x86_64.AppImage"
+          PUBDATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
+          cat > appcast-linux-x86_64.xml <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>AppFlowy osn</title>
+              <item>
+                <title>$VERSION</title>
+                <pubDate>$PUBDATE</pubDate>
+                <sparkle:version>$VERSION</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <enclosure url="$URL" sparkle:os="linux" type="application/octet-stream" />
+              </item>
+            </channel>
+          </rss>
+          EOF
+          gh release upload "$VERSION" --repo "${{ github.repository }}" --clobber appcast-linux-x86_64.xml
+
+  # 7) Pubblica la release (toglie il flag draft)
+  publish:
+    needs: [check, build-macos, build-windows, build-linux, appcast-extra]
+    if: always() && needs.check.outputs.should_build == 'true' && needs.build-macos.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - name: Pubblica
+        run: gh release edit "$VERSION" --repo "${{ github.repository }}" --draft=false --latest
