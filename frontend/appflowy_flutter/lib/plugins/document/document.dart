@@ -7,8 +7,7 @@ import 'package:appflowy/mobile/presentation/presentation.dart';
 import 'package:appflowy/plugins/document/application/document_appearance_cubit.dart';
 import 'package:appflowy/plugins/document/document_page.dart';
 import 'package:appflowy/plugins/document/presentation/document_collaborators.dart';
-import 'package:appflowy/features/workspace/logic/workspace_bloc.dart';
-import 'package:appflowy/plugins/shared/share/share_menu_action.dart';
+import 'package:appflowy/plugins/shared/share/share_button.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/shared/feature_flags.dart';
 import 'package:appflowy/shared/icon_emoji_picker/tab.dart';
@@ -212,24 +211,17 @@ class DocumentPluginWidgetBuilder extends PluginWidgetBuilder
                   const HSpace(16),
                 ]
               : [const HSpace(8)],
-          // OSN: "Condividi" tolto dall'header e spostato nel menu "..."
+          ShareButton(
+            key: ValueKey('share_button_${view.id}'),
+            view: view,
+          ),
+          const HSpace(10),
           ViewFavoriteButton(
             key: ValueKey('favorite_button_${view.id}'),
             view: view,
           ),
           const HSpace(4),
-          Builder(
-            builder: (context) => MoreViewActions(
-              view: view,
-              customActions: [
-                ShareMenuAction(
-                  key: ValueKey('share_action_${view.id}'),
-                  view: view,
-                  workspaceBloc: context.read<UserWorkspaceBloc>(),
-                ),
-              ],
-            ),
-          ),
+          MoreViewActions(view: view),
         ],
       ),
     );
