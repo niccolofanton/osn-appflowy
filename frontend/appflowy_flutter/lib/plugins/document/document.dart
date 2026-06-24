@@ -7,6 +7,7 @@ import 'package:appflowy/mobile/presentation/presentation.dart';
 import 'package:appflowy/plugins/document/application/document_appearance_cubit.dart';
 import 'package:appflowy/plugins/document/document_page.dart';
 import 'package:appflowy/plugins/document/presentation/document_collaborators.dart';
+import 'package:appflowy/features/workspace/logic/workspace_bloc.dart';
 import 'package:appflowy/plugins/shared/share/share_menu_action.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/shared/feature_flags.dart';
@@ -217,14 +218,17 @@ class DocumentPluginWidgetBuilder extends PluginWidgetBuilder
             view: view,
           ),
           const HSpace(4),
-          MoreViewActions(
-            view: view,
-            customActions: [
-              ShareMenuAction(
-                key: ValueKey('share_action_${view.id}'),
-                view: view,
-              ),
-            ],
+          Builder(
+            builder: (context) => MoreViewActions(
+              view: view,
+              customActions: [
+                ShareMenuAction(
+                  key: ValueKey('share_action_${view.id}'),
+                  view: view,
+                  workspaceBloc: context.read<UserWorkspaceBloc>(),
+                ),
+              ],
+            ),
           ),
         ],
       ),
