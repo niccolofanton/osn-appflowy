@@ -1,7 +1,13 @@
+import 'dart:io' show Platform;
+
 import 'package:appflowy/features/workspace/data/repositories/rust_workspace_repository_impl.dart';
 import 'package:appflowy/features/workspace/logic/workspace_bloc.dart';
 import 'package:appflowy/plugins/blank/blank.dart';
 import 'package:appflowy/startup/plugin/plugin.dart';
+import 'package:appflowy/plugins/terminal/application/terminal_panel_controller.dart';
+import 'package:appflowy/plugins/terminal/presentation/terminal_chrome.dart';
+import 'package:appflowy/plugins/terminal/presentation/terminal_panel.dart';
+import 'package:appflowy/plugins/terminal/presentation/terminal_theme.dart';
 import 'package:appflowy/startup/startup.dart';
 import 'package:appflowy/startup/tasks/memory_leak_detector.dart';
 import 'package:appflowy/user/application/auth/auth_service.dart';
@@ -30,6 +36,7 @@ import 'package:appflowy_backend/protobuf/flowy-user/protobuf.dart'
 import 'package:collection/collection.dart';
 import 'package:flowy_infra_ui/style_widget/container.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sized_context/sized_context.dart';
 import 'package:styled_widget/styled_widget.dart';
@@ -197,7 +204,7 @@ class DesktopHomeScreen extends StatelessWidget {
         layout.showMenu ? const SidebarResizer() : const SizedBox.shrink();
     final editPanel = _buildEditPanel(context, layout: layout);
 
-    return _layoutWidgets(
+    final body = _layoutWidgets(
       layout: layout,
       homeStack: homeStack,
       sidebar: sidebar,
@@ -206,6 +213,55 @@ class DesktopHomeScreen extends StatelessWidget {
       homeMenuResizer: homeMenuResizer,
       notificationPanel: notificationPanel,
       sliderHoverTrigger: sliderHoverTrigger,
+    );
+
+    // OSN: pannello terminale embeddato (solo macOS). Avvolge il body in un
+    // Row[ Expanded(home) | resizer | pannello ] così il contenuto si restringe
+    // senza modificare HomeLayout. Su altre piattaforme ritorna il body intatto.
+    return _wrapWithTerminalPanel(body);
+  }
+
+  Widget _wrapWithTerminalPanel(Widget body) {
+    if (!Platform.isMacOS) return body;
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyT, meta: true, alt: true):
+            () {
+          terminalPanelController.toggle();
+        },
+      },
+      child: Focus(
+        child: AnimatedBuilder(
+          animation: terminalPanelController,
+          builder: (context, _) {
+            final c = terminalPanelController;
+            final manager = c.managerOrNull;
+            return Stack(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: body),
+                    if (c.isOpen) ...[
+                      TerminalPanelResizer(controller: c),
+                      SizedBox(
+                        width: c.width,
+                        child: manager == null
+                            ? const ColoredBox(color: kOsnPanelBg)
+                            : TerminalPanel(manager: manager),
+                      ),
+                    ],
+                  ],
+                ),
+                Positioned(
+                  right: c.isOpen ? c.width + 20 : 20,
+                  bottom: 56,
+                  child: TerminalToggleButton(controller: c),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 

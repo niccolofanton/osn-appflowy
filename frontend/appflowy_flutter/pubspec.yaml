@@ -81,6 +81,8 @@ dependencies:
 
   flutter_staggered_grid_view: ^0.7.0
   flutter_tex: ^4.0.9
+  # OSN: terminale embeddato (pannello destro multi-sessione + claude)
+  flutter_pty: ^0.4.2
   fluttertoast: ^8.2.6
   freezed_annotation: ^2.2.0
   get_it: ^8.0.3
@@ -144,6 +146,8 @@ dependencies:
   # Window Manager for MacOS and Linux
   version: ^3.0.2
   xml: ^6.5.0
+  # OSN: emulatore di terminale (widget) per il pannello embeddato
+  xterm: ^4.0.0
   window_manager: ^0.4.3
   saver_gallery: ^4.0.1
   talker_bloc_logger: ^4.8.1
