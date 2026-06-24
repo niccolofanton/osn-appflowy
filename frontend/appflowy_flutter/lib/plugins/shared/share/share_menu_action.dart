@@ -8,6 +8,7 @@ import 'package:appflowy/plugins/database/application/tab_bar_bloc.dart';
 import 'package:appflowy/plugins/shared/share/share_bloc.dart';
 import 'package:appflowy/plugins/shared/share/share_menu.dart';
 import 'package:appflowy/startup/startup.dart';
+import 'package:appflowy/startup/tasks/app_widget.dart';
 import 'package:appflowy/workspace/application/view/view_ext.dart';
 import 'package:appflowy_backend/protobuf/flowy-folder/view.pb.dart';
 import 'package:appflowy_backend/protobuf/flowy-user/protobuf.dart';
@@ -43,8 +44,11 @@ class ShareMenuAction extends StatelessWidget {
     final workspaceId = workspaceBloc.state.currentWorkspace?.workspaceId ?? '';
     final workspaceType = workspaceBloc.state.currentWorkspace?.workspaceType;
 
+    // OSN: apre il dialog sul navigator ROOT. Il context dell'overlay del menu
+    // "..." non espone un Navigator valido, perciò showDialog(context) restava
+    // inerte (nessun dialog mostrato).
     showDialog(
-      context: context,
+      context: AppGlobals.rootNavKey.currentContext ?? context,
       builder: (_) => MultiBlocProvider(
         providers: [
           BlocProvider(
