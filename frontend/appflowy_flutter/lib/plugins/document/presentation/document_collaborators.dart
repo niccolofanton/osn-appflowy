@@ -99,7 +99,8 @@ class _UserAvatar extends StatelessWidget {
         child: UserAvatar(
           iconUrl: user.userAvatar,
           name: user.userName,
-          size: AFAvatarSize.m,
+          // OSN: avatar collaboratori -20% (m=32 -> s=24)
+          size: AFAvatarSize.s,
         ),
       ),
     );

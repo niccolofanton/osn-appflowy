@@ -284,6 +284,48 @@ flutter:
         - asset: assets/google_fonts/Roboto_Mono/RobotoMono-Regular.ttf
         - asset: assets/google_fonts/Roboto_Mono/RobotoMono-Italic.ttf
           style: italic
+    # OSN: famiglia Geist (sans) bundlata = font di default dell'app
+    - family: Geist
+      fonts:
+        - asset: assets/google_fonts/Geist/Geist-Thin.ttf
+          weight: 100
+        - asset: assets/google_fonts/Geist/Geist-UltraLight.ttf
+          weight: 200
+        - asset: assets/google_fonts/Geist/Geist-Light.ttf
+          weight: 300
+        - asset: assets/google_fonts/Geist/Geist-Regular.ttf
+          weight: 400
+        - asset: assets/google_fonts/Geist/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/google_fonts/Geist/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/google_fonts/Geist/Geist-Bold.ttf
+          weight: 700
+        - asset: assets/google_fonts/Geist/Geist-Black.ttf
+          weight: 800
+        - asset: assets/google_fonts/Geist/Geist-UltraBlack.ttf
+          weight: 900
+    # OSN: Geist Mono per i blocchi di codice
+    - family: Geist Mono
+      fonts:
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-Thin.ttf
+          weight: 100
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-UltraLight.ttf
+          weight: 200
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-Light.ttf
+          weight: 300
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-Regular.ttf
+          weight: 400
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-Medium.ttf
+          weight: 500
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-SemiBold.ttf
+          weight: 600
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-Bold.ttf
+          weight: 700
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-Black.ttf
+          weight: 800
+        - asset: assets/google_fonts/Geist_Mono/GeistMono-UltraBlack.ttf
+          weight: 900
     # White-label font configuration will be added here
     # BEGIN: WHITE_LABEL_FONT
     # END: WHITE_LABEL_FONT

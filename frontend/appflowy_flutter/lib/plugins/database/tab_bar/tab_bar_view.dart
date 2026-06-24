@@ -487,11 +487,15 @@ class DatabasePluginWidgetBuilder extends PluginWidgetBuilder {
       ],
       child: Row(
         children: [
-          ShareButton(key: ValueKey(view.id), view: view),
-          const HSpace(10),
+          // OSN: "Condividi" spostato nel menu "..."
           ViewFavoriteButton(view: view),
           const HSpace(4),
-          MoreViewActions(view: view),
+          MoreViewActions(
+            view: view,
+            customActions: [
+              ShareButton(key: ValueKey(view.id), view: view),
+            ],
+          ),
         ],
       ),
     );
