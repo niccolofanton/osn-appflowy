@@ -7,7 +7,7 @@ import 'package:appflowy/mobile/presentation/presentation.dart';
 import 'package:appflowy/plugins/document/application/document_appearance_cubit.dart';
 import 'package:appflowy/plugins/document/document_page.dart';
 import 'package:appflowy/plugins/document/presentation/document_collaborators.dart';
-import 'package:appflowy/plugins/shared/share/share_button.dart';
+import 'package:appflowy/plugins/shared/share/share_menu_action.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/shared/feature_flags.dart';
 import 'package:appflowy/shared/icon_emoji_picker/tab.dart';
@@ -220,8 +220,8 @@ class DocumentPluginWidgetBuilder extends PluginWidgetBuilder
           MoreViewActions(
             view: view,
             customActions: [
-              ShareButton(
-                key: ValueKey('share_button_${view.id}'),
+              ShareMenuAction(
+                key: ValueKey('share_action_${view.id}'),
                 view: view,
               ),
             ],
