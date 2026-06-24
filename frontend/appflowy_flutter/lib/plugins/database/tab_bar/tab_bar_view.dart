@@ -10,8 +10,7 @@ import 'package:appflowy/plugins/database/application/tab_bar_bloc.dart';
 import 'package:appflowy/plugins/database/grid/presentation/layout/sizes.dart';
 import 'package:appflowy/plugins/document/presentation/compact_mode_event.dart';
 import 'package:appflowy/plugins/document/presentation/editor_plugins/database/database_view_block_component.dart';
-import 'package:appflowy/features/workspace/logic/workspace_bloc.dart';
-import 'package:appflowy/plugins/shared/share/share_menu_action.dart';
+import 'package:appflowy/plugins/shared/share/share_button.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/startup/plugin/plugin.dart';
 import 'package:appflowy/startup/startup.dart';
@@ -488,21 +487,11 @@ class DatabasePluginWidgetBuilder extends PluginWidgetBuilder {
       ],
       child: Row(
         children: [
-          // OSN: "Condividi" spostato nel menu "..."
+          ShareButton(key: ValueKey(view.id), view: view),
+          const HSpace(10),
           ViewFavoriteButton(view: view),
           const HSpace(4),
-          Builder(
-            builder: (context) => MoreViewActions(
-              view: view,
-              customActions: [
-                ShareMenuAction(
-                  key: ValueKey(view.id),
-                  view: view,
-                  workspaceBloc: context.read<UserWorkspaceBloc>(),
-                ),
-              ],
-            ),
-          ),
+          MoreViewActions(view: view),
         ],
       ),
     );
