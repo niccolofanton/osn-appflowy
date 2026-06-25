@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'terminal_cli_config.dart';
 import 'terminal_session.dart';
 
 /// Manages the lifecycle of embedded [TerminalSession]s.
@@ -8,10 +9,18 @@ import 'terminal_session.dart';
 /// `Random`/`DateTime`). Does not create any session automatically; callers
 /// must invoke [newSession]. Notifies listeners on every mutation.
 class TerminalSessionManager extends ChangeNotifier {
-  TerminalSessionManager({required this.workingDir});
+  TerminalSessionManager({
+    required this.workingDir,
+    this.skipPermissionsByDefault = false,
+  });
 
   /// Working directory used as the root for every spawned session.
   final String workingDir;
+
+  /// Preferenza: le nuove sessioni partono con `--dangerously-skip-permissions`
+  /// quando [newSession] non specifica esplicitamente il flag. Sincronizzata dal
+  /// [TerminalPanelController].
+  bool skipPermissionsByDefault;
 
   final List<TerminalSession> _sessions = <TerminalSession>[];
   int _counter = 0;
@@ -31,14 +40,20 @@ class TerminalSessionManager extends ChangeNotifier {
   }
 
   /// Spawns a new session, makes it active, and notifies listeners.
-  void newSession() {
+  ///
+  /// [dangerouslySkipPermissions] forza il flag; se null usa la preferenza
+  /// [skipPermissionsByDefault]. Quando true la sessione auto-lancia
+  /// `claude --dangerously-skip-permissions`.
+  void newSession({bool? dangerouslySkipPermissions}) {
     _counter++;
     final id = 's$_counter';
     final title = 'Session $_counter';
+    final skip = dangerouslySkipPermissions ?? skipPermissionsByDefault;
     final session = TerminalSession.spawn(
       id: id,
       title: title,
       workingDir: workingDir,
+      launchCommand: terminalCliConfig.buildLaunchCommand(skip: skip),
     );
     _sessions.add(session);
     _activeId = id;

@@ -2,6 +2,7 @@ import 'package:appflowy/env/cloud_env.dart';
 import 'package:appflowy/features/workspace/logic/workspace_bloc.dart';
 import 'package:appflowy/generated/locale_keys.g.dart';
 import 'package:appflowy/plugins/shared/share/constants.dart';
+import 'package:appflowy/plugins/terminal/presentation/settings_agent_cli_view.dart';
 import 'package:appflowy/shared/appflowy_cache_manager.dart';
 import 'package:appflowy/startup/startup.dart';
 import 'package:appflowy/util/share_log_files.dart';
@@ -162,6 +163,8 @@ class SettingsDialog extends StatelessWidget {
             workspaceId: workspace.workspaceId,
           );
         }
+      case SettingsPage.agentCli:
+        return const SettingsAgentCliView();
       case SettingsPage.member:
         return WorkspaceMembersPage(
           userProfile: user,

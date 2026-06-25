@@ -8,6 +8,7 @@ import 'package:appflowy/plugins/document/application/document_appearance_cubit.
 import 'package:appflowy/plugins/document/document_page.dart';
 import 'package:appflowy/plugins/document/presentation/document_collaborators.dart';
 import 'package:appflowy/plugins/shared/share/share_button.dart';
+import 'package:appflowy/plugins/terminal/presentation/terminal_chrome.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/shared/feature_flags.dart';
 import 'package:appflowy/shared/icon_emoji_picker/tab.dart';
@@ -15,7 +16,6 @@ import 'package:appflowy/startup/plugin/plugin.dart';
 import 'package:appflowy/workspace/application/view/view_ext.dart';
 import 'package:appflowy/workspace/application/view_info/view_info_bloc.dart';
 import 'package:appflowy/workspace/presentation/home/home_stack.dart';
-import 'package:appflowy/workspace/presentation/widgets/favorite_button.dart';
 import 'package:appflowy/workspace/presentation/widgets/more_view_actions/more_view_actions.dart';
 import 'package:appflowy/workspace/presentation/widgets/tab_bar_item.dart';
 import 'package:appflowy/workspace/presentation/widgets/view_title_bar.dart';
@@ -216,10 +216,7 @@ class DocumentPluginWidgetBuilder extends PluginWidgetBuilder
             view: view,
           ),
           const HSpace(10),
-          ViewFavoriteButton(
-            key: ValueKey('favorite_button_${view.id}'),
-            view: view,
-          ),
+          const TerminalHeaderButton(),
           const HSpace(4),
           MoreViewActions(view: view),
         ],

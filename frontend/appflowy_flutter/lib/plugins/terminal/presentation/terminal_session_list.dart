@@ -1,48 +1,66 @@
+import 'package:flowy_infra_ui/style_widget/hover.dart';
 import 'package:flutter/material.dart';
 
 import 'package:appflowy/plugins/terminal/application/terminal_session.dart';
 import 'package:appflowy/plugins/terminal/application/terminal_session_manager.dart';
-import 'package:appflowy/plugins/terminal/presentation/terminal_theme.dart';
 
-/// Colonna a sinistra (~180px) con l'elenco delle sessioni terminale.
+/// Colonna (~200px) con l'elenco delle sessioni terminale, a DESTRA del
+/// terminale. Usa lo stesso sfondo/hover/selezione della sidebar dell'app
+/// (`Theme.colorScheme` + `FlowyHover`).
 ///
-/// Header "Sessioni" + "+", lista reattiva delle sessioni: tap = activate,
-/// "x" = close, doppio-tap = rinomina inline.
+/// Header "Sessioni" con: ⚡ nuova sessione skip-permissions, + nuova sessione.
+/// Riga: tap = activate, doppio-tap = rinomina inline, "x" = chiudi.
 class TerminalSessionList extends StatelessWidget {
   const TerminalSessionList({
     super.key,
     required this.manager,
+    this.onCollapse,
+    this.onClosePanel,
+    this.skipPermissionsOn = false,
+    this.onToggleSkipPermissions,
   });
 
   final TerminalSessionManager manager;
 
+  /// Se non null, mostra un chevron per collassare la colonna sessioni.
+  final VoidCallback? onCollapse;
+
+  /// Se non null, mostra una X per chiudere l'intero pannello terminale.
+  final VoidCallback? onClosePanel;
+
+  /// Stato corrente della preferenza "salta permessi" (per il toggle ⚡).
+  final bool skipPermissionsOn;
+
+  /// Se non null, mostra il toggle ⚡ che attiva/disattiva [skipPermissionsOn].
+  final VoidCallback? onToggleSkipPermissions;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final border = theme.colorScheme.onSurface.withValues(alpha: 0.08);
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: kOsnPanelLayer,
-        border: Border(
-          right: BorderSide(color: kOsnPanelBorder),
-        ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(left: BorderSide(color: border)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(),
-          const Divider(height: 1, thickness: 1, color: kOsnPanelBorder),
+          _buildHeader(context),
+          Divider(height: 1, thickness: 1, color: border),
           Expanded(
             child: ListenableBuilder(
               listenable: manager,
               builder: (context, _) {
                 final sessions = manager.sessions;
                 if (sessions.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(12),
+                  return Padding(
+                    padding: const EdgeInsets.all(12),
                     child: Text(
                       'Nessuna sessione.\nPremi + per iniziare.',
                       style: TextStyle(
-                        color: kOsnTextSecondary,
-                        fontSize: 12,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        fontSize: 13,
                         height: 1.4,
                       ),
                     ),
@@ -50,7 +68,8 @@ class TerminalSessionList extends StatelessWidget {
                 }
                 final activeId = manager.active?.id;
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                   itemCount: sessions.length,
                   itemBuilder: (context, index) {
                     final session = sessions[index];
@@ -72,38 +91,90 @@ class TerminalSessionList extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final iconColor = theme.colorScheme.onSurface.withValues(alpha: 0.8);
     return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 4, top: 6, bottom: 6),
+      padding: const EdgeInsets.only(left: 4, right: 4, top: 6, bottom: 6),
       child: Row(
         children: [
-          const Expanded(
-            child: Text(
-              'Sessioni',
-              style: TextStyle(
-                color: kOsnTextSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
+          if (onCollapse != null)
+            _HeaderIconButton(
+              icon: Icons.chevron_right,
+              tooltip: 'Comprimi',
+              color: iconColor,
+              onPressed: onCollapse!,
+            ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: onCollapse != null ? 0 : 8),
+              child: Text(
+                'Sessioni',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           ),
-          IconButton(
+          if (onToggleSkipPermissions != null)
+            _HeaderIconButton(
+              icon: skipPermissionsOn ? Icons.flash_on : Icons.flash_off,
+              tooltip: skipPermissionsOn
+                  ? 'Salta permessi nelle nuove sessioni: ATTIVO — clic per disattivare'
+                  : 'Salta permessi nelle nuove sessioni: off — clic per attivare',
+              color: skipPermissionsOn ? theme.colorScheme.primary : iconColor,
+              onPressed: onToggleSkipPermissions!,
+            ),
+          _HeaderIconButton(
+            icon: Icons.add,
             tooltip: 'Nuova sessione',
-            icon: const Icon(Icons.add, size: 18, color: kOsnTextPrimary),
-            splashRadius: 16,
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            onPressed: manager.newSession,
+            color: iconColor,
+            onPressed: () => manager.newSession(),
           ),
+          if (onClosePanel != null)
+            _HeaderIconButton(
+              icon: Icons.close,
+              tooltip: 'Chiudi terminale (⌥⌘T)',
+              color: iconColor,
+              onPressed: onClosePanel!,
+            ),
         ],
       ),
     );
   }
 }
 
-/// Singola riga sessione: gestisce hover (per la "x") e la rinomina inline.
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      icon: Icon(icon, size: 18, color: color),
+      splashRadius: 16,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// Riga sessione con hover identico alla sidebar (FlowyHover) e rinomina inline.
 class _SessionTile extends StatefulWidget {
   const _SessionTile({
     super.key,
@@ -125,7 +196,6 @@ class _SessionTile extends StatefulWidget {
 }
 
 class _SessionTileState extends State<_SessionTile> {
-  bool _hovered = false;
   bool _editing = false;
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
@@ -167,50 +237,43 @@ class _SessionTileState extends State<_SessionTile> {
 
   @override
   Widget build(BuildContext context) {
-    final showClose = _hovered || widget.isActive;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
+    final theme = Theme.of(context);
+    return FlowyHover(
+      resetHoverOnRebuild: false,
+      style: HoverStyle(
+        hoverColor: theme.colorScheme.secondary,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      isSelected: () => widget.isActive,
+      builder: (context, onHover) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         onDoubleTap: _startEditing,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        child: SizedBox(
           height: 30,
-          decoration: BoxDecoration(
-            color: widget.isActive
-                ? kOsnActiveBg
-                : (_hovered ? const Color(0x14FFFFFF) : null),
-            borderRadius: BorderRadius.circular(4),
-            border: Border(
-              left: BorderSide(
-                color: widget.isActive ? kOsnAccent : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
           child: Row(
             children: [
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: _editing
-                    ? _buildEditor()
+                    ? _buildEditor(theme)
                     : Text(
                         widget.session.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: widget.isActive
-                              ? kOsnTextPrimary
-                              : const Color(0xB0FFFFFF),
-                          fontSize: 13,
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 14,
                         ),
                       ),
               ),
-              if (showClose && !_editing)
-                _CloseButton(onClose: widget.onClose)
+              if ((onHover || widget.isActive) && !_editing)
+                _CloseButton(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  onClose: widget.onClose,
+                )
               else
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
             ],
           ),
         ),
@@ -218,13 +281,13 @@ class _SessionTileState extends State<_SessionTile> {
     );
   }
 
-  Widget _buildEditor() {
+  Widget _buildEditor(ThemeData theme) {
     return TextField(
       controller: _controller,
       focusNode: _focusNode,
       autofocus: true,
-      cursorColor: kOsnAccent,
-      style: const TextStyle(color: kOsnTextPrimary, fontSize: 13),
+      cursorColor: theme.colorScheme.primary,
+      style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14),
       decoration: const InputDecoration(
         isDense: true,
         contentPadding: EdgeInsets.symmetric(vertical: 4),
@@ -238,8 +301,9 @@ class _SessionTileState extends State<_SessionTile> {
 }
 
 class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onClose});
+  const _CloseButton({required this.color, required this.onClose});
 
+  final Color color;
   final VoidCallback onClose;
 
   @override
@@ -248,7 +312,7 @@ class _CloseButton extends StatelessWidget {
       width: 28,
       child: IconButton(
         tooltip: 'Chiudi sessione',
-        icon: const Icon(Icons.close, size: 14, color: kOsnTextSecondary),
+        icon: Icon(Icons.close, size: 14, color: color),
         splashRadius: 12,
         visualDensity: VisualDensity.compact,
         padding: EdgeInsets.zero,
