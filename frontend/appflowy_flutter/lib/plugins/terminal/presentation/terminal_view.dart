@@ -10,13 +10,14 @@ import 'package:appflowy/plugins/terminal/presentation/terminal_theme.dart';
 
 /// Renderizza il terminale [xterm] della [session] attiva.
 ///
-/// - font monospace **Geist Mono**, scroll della rotella (mouseHandler in
-///   [TerminalSession]), **drag & drop** di file (path shell-quoted al cursore);
-/// - **Shift+Invio** → a capo senza inviare. Nota: con l'IME attivo macOS NON
-///   espone lo stato dei modificatori (`HardwareKeyboard.isShiftPressed` resta
-///   false), quindi usiamo `hardwareKeyboardOnly: true` e tracciamo lo Shift a
-///   mano dai key-event; all'Invio con Shift premuto inviamo la sequenza kitty
-///   `CSI 13;2u` che Claude Code interpreta come newline.
+/// IME ATTIVO (no `hardwareKeyboardOnly`): necessario per le **dead-key** (es.
+/// US International `´`+`e` = `é`). Le scorciatoie con modificatori — che con
+/// l'IME non sono distinguibili a livello di focus — sono intercettate da un
+/// handler globale su [HardwareKeyboard] (eventi hardware grezzi, prima
+/// dell'IME), solo quando il terminale ha il focus:
+/// - **Shift+Invio** → `CSI 13;2u` (a capo, kitty).
+/// - **Cmd+⌫** → `^U` (`\x15`) = elimina dall'inizio riga.
+/// - **Option+⌫** / **Ctrl+⌫** → `^W` (`\x17`) = elimina la parola precedente.
 class ActiveTerminalView extends StatefulWidget {
   const ActiveTerminalView({super.key, required this.session});
 
@@ -28,9 +29,89 @@ class ActiveTerminalView extends StatefulWidget {
 
 class _ActiveTerminalViewState extends State<ActiveTerminalView> {
   bool _dragging = false;
-
-  /// Stato dello Shift tracciato a mano dai key-event (vedi nota di classe).
   bool _shiftDown = false;
+  bool _altDown = false;
+  bool _ctrlDown = false;
+  bool _metaDown = false;
+  final FocusNode _terminalFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_rawKeyHandler);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_rawKeyHandler);
+    _terminalFocus.dispose();
+    super.dispose();
+  }
+
+  void _write(String s) =>
+      widget.session.pty.write(Uint8List.fromList(utf8.encode(s)));
+
+  bool _rawKeyHandler(KeyEvent event) {
+    final lk = event.logicalKey;
+    final down = event is KeyDownEvent;
+    final up = event is KeyUpEvent;
+
+    // Stato modificatori tracciato a mano (con l'IME `isXPressed` non è
+    // affidabile su macOS). Aggiornato anche quando il terminale non ha il focus.
+    if (lk == LogicalKeyboardKey.shiftLeft ||
+        lk == LogicalKeyboardKey.shiftRight) {
+      if (down) _shiftDown = true;
+      if (up) _shiftDown = false;
+      return false;
+    }
+    if (lk == LogicalKeyboardKey.altLeft || lk == LogicalKeyboardKey.altRight) {
+      if (down) _altDown = true;
+      if (up) _altDown = false;
+      return false;
+    }
+    if (lk == LogicalKeyboardKey.controlLeft ||
+        lk == LogicalKeyboardKey.controlRight) {
+      if (down) _ctrlDown = true;
+      if (up) _ctrlDown = false;
+      return false;
+    }
+    if (lk == LogicalKeyboardKey.metaLeft ||
+        lk == LogicalKeyboardKey.metaRight) {
+      if (down) _metaDown = true;
+      if (up) _metaDown = false;
+      return false;
+    }
+
+    if (!_terminalFocus.hasFocus) return false;
+    final isPress = event is KeyDownEvent || event is KeyRepeatEvent;
+    if (!isPress) return false;
+
+    final hk = HardwareKeyboard.instance;
+    final shift = _shiftDown || hk.isShiftPressed;
+    final alt = _altDown || hk.isAltPressed;
+    final ctrl = _ctrlDown || hk.isControlPressed;
+    final meta = _metaDown || hk.isMetaPressed;
+
+    final isEnter =
+        lk == LogicalKeyboardKey.enter || lk == LogicalKeyboardKey.numpadEnter;
+    if (isEnter && shift) {
+      _write('\x1b[13;2u'); // a capo senza inviare
+      return true;
+    }
+
+    if (lk == LogicalKeyboardKey.backspace) {
+      if (meta) {
+        _write('\x15'); // ^U: elimina dall'inizio riga
+        return true;
+      }
+      if (alt || ctrl) {
+        _write('\x17'); // ^W: elimina la parola precedente
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   /// Single-quote un path per la shell (gestisce gli apici interni).
   static String _shellQuote(String p) => "'${p.replaceAll("'", r"'\''")}'";
@@ -38,25 +119,7 @@ class _ActiveTerminalViewState extends State<ActiveTerminalView> {
   void _onDrop(DropDoneDetails detail) {
     final paths = detail.files.map((f) => _shellQuote(f.path)).join(' ');
     if (paths.isEmpty) return;
-    widget.session.pty.write(Uint8List.fromList(utf8.encode('$paths ')));
-  }
-
-  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
-    final lk = event.logicalKey;
-    if (lk == LogicalKeyboardKey.shiftLeft ||
-        lk == LogicalKeyboardKey.shiftRight) {
-      if (event is KeyDownEvent) _shiftDown = true;
-      if (event is KeyUpEvent) _shiftDown = false;
-    }
-    final isEnter =
-        lk == LogicalKeyboardKey.enter || lk == LogicalKeyboardKey.numpadEnter;
-    final isPress = event is KeyDownEvent || event is KeyRepeatEvent;
-    final shift = _shiftDown || HardwareKeyboard.instance.isShiftPressed;
-    if (isEnter && isPress && shift) {
-      widget.session.pty.write(Uint8List.fromList(utf8.encode('\x1b[13;2u')));
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
+    _write('$paths ');
   }
 
   @override
@@ -81,8 +144,6 @@ class _ActiveTerminalViewState extends State<ActiveTerminalView> {
           theme: osnTerminalTheme,
           textStyle: const TerminalStyle(
             fontFamily: 'Geist Mono',
-            // Fallback con Nerd Font per i glyph powerline/icone del prompt zsh
-            // (p10k nerdfont-complete): Geist Mono non li contiene → tofu/`?`.
             fontFamilyFallback: [
               'MesloLGS NF',
               'JetBrainsMono Nerd Font',
@@ -93,8 +154,7 @@ class _ActiveTerminalViewState extends State<ActiveTerminalView> {
           ),
           padding: const EdgeInsets.all(8),
           autofocus: true,
-          hardwareKeyboardOnly: true,
-          onKeyEvent: _onKeyEvent,
+          focusNode: _terminalFocus,
         ),
       ),
     );

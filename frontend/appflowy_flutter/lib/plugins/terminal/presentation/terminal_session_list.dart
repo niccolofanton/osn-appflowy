@@ -73,13 +73,16 @@ class TerminalSessionList extends StatelessWidget {
                   itemCount: sessions.length,
                   itemBuilder: (context, index) {
                     final session = sessions[index];
-                    return _SessionTile(
-                      key: ValueKey(session.id),
-                      session: session,
-                      isActive: session.id == activeId,
-                      onTap: () => manager.activate(session.id),
-                      onClose: () => manager.closeSession(session.id),
-                      onRename: (title) => manager.rename(session.id, title),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: _SessionTile(
+                        key: ValueKey(session.id),
+                        session: session,
+                        isActive: session.id == activeId,
+                        onTap: () => manager.activate(session.id),
+                        onClose: () => manager.closeSession(session.id),
+                        onRename: (title) => manager.rename(session.id, title),
+                      ),
                     );
                   },
                 );
