@@ -125,6 +125,11 @@ class TerminalCliConfig extends ChangeNotifier {
 
   /// Comando di auto-launch (senza newline). [skip] aggiunge il flag
   /// salta-permessi; [resume] antepone gli argomenti di resume.
+  ///
+  /// NB: il chiamante (manager) deve passare `resume:true` SOLO quando c'è
+  /// davvero qualcosa da riprendere — `claude --continue` esce con codice 0
+  /// anche senza conversazione (stampa "No conversation found"), quindi un
+  /// fallback `||` non sarebbe affidabile.
   String buildLaunchCommand({required bool skip, bool resume = false}) {
     final parts = <String>[_command.trim()];
     if (resume && _resumeArgs.trim().isNotEmpty) parts.add(_resumeArgs.trim());
