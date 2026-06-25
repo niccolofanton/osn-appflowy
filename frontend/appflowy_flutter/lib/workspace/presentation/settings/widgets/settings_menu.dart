@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:appflowy/generated/flowy_svgs.g.dart';
 import 'package:appflowy/generated/locale_keys.g.dart';
 import 'package:appflowy/shared/feature_flags.dart';
@@ -109,6 +111,16 @@ class SettingsMenu extends StatelessWidget {
               ),
               changeSelectedPage: changeSelectedPage,
             ),
+            // osn: terminale agent CLI (solo macOS). Label hardcoded
+            // (no need to translate this page).
+            if (Platform.isMacOS)
+              SettingsMenuElement(
+                page: SettingsPage.agentCli,
+                selectedPage: currentPage,
+                label: 'Agent CLI',
+                icon: const Icon(Icons.terminal_rounded, size: 20),
+                changeSelectedPage: changeSelectedPage,
+              ),
             if (userProfile.workspaceType == WorkspaceTypePB.ServerW &&
                 currentUserRole != null &&
                 currentUserRole != AFRolePB.Guest)
