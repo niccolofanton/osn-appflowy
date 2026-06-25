@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:appflowy/mobile/application/mobile_router.dart';
+import 'package:appflowy/osn/theme/osn_appflowy_theme.dart'; // OSN
 import 'package:appflowy/plugins/document/application/document_appearance_cubit.dart';
 import 'package:appflowy/shared/clipboard_state.dart';
 import 'package:appflowy/shared/easy_localiation_service.dart';
@@ -147,7 +148,9 @@ class _ApplicationWidgetState extends State<ApplicationWidget> {
 
   final _commandPaletteNotifier = ValueNotifier(CommandPaletteNotifierValue());
 
-  final themeBuilder = AppFlowyDefaultTheme();
+  // OSN: tema monocromo "Notion" come override del default, senza toccare
+  // i file (auto-generati) di appflowy_ui. Vedi lib/osn/theme/ + OSN_PATCHES.md.
+  final themeBuilder = const OsnAppFlowyTheme();
 
   @override
   void initState() {
