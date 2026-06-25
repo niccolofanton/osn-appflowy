@@ -11,6 +11,7 @@ import 'package:appflowy/plugins/database/grid/presentation/layout/sizes.dart';
 import 'package:appflowy/plugins/document/presentation/compact_mode_event.dart';
 import 'package:appflowy/plugins/document/presentation/editor_plugins/database/database_view_block_component.dart';
 import 'package:appflowy/plugins/shared/share/share_button.dart';
+import 'package:appflowy/plugins/terminal/presentation/terminal_chrome.dart';
 import 'package:appflowy/plugins/util.dart';
 import 'package:appflowy/startup/plugin/plugin.dart';
 import 'package:appflowy/startup/startup.dart';
@@ -18,7 +19,6 @@ import 'package:appflowy/workspace/application/view/view_bloc.dart';
 import 'package:appflowy/workspace/application/view/view_ext.dart';
 import 'package:appflowy/workspace/application/view_info/view_info_bloc.dart';
 import 'package:appflowy/workspace/presentation/home/home_stack.dart';
-import 'package:appflowy/workspace/presentation/widgets/favorite_button.dart';
 import 'package:appflowy/workspace/presentation/widgets/more_view_actions/more_view_actions.dart';
 import 'package:appflowy/workspace/presentation/widgets/tab_bar_item.dart';
 import 'package:appflowy/workspace/presentation/widgets/view_title_bar.dart';
@@ -489,7 +489,7 @@ class DatabasePluginWidgetBuilder extends PluginWidgetBuilder {
         children: [
           ShareButton(key: ValueKey(view.id), view: view),
           const HSpace(10),
-          ViewFavoriteButton(view: view),
+          const TerminalHeaderButton(),
           const HSpace(4),
           MoreViewActions(view: view),
         ],

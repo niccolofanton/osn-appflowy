@@ -6,8 +6,6 @@ import 'package:appflowy/plugins/blank/blank.dart';
 import 'package:appflowy/startup/plugin/plugin.dart';
 import 'package:appflowy/plugins/terminal/application/terminal_panel_controller.dart';
 import 'package:appflowy/plugins/terminal/presentation/terminal_chrome.dart';
-import 'package:appflowy/plugins/terminal/presentation/terminal_panel.dart';
-import 'package:appflowy/plugins/terminal/presentation/terminal_theme.dart';
 import 'package:appflowy/startup/startup.dart';
 import 'package:appflowy/startup/tasks/memory_leak_detector.dart';
 import 'package:appflowy/user/application/auth/auth_service.dart';
@@ -231,35 +229,11 @@ class DesktopHomeScreen extends StatelessWidget {
         },
       },
       child: Focus(
-        child: AnimatedBuilder(
-          animation: terminalPanelController,
-          builder: (context, _) {
-            final c = terminalPanelController;
-            final manager = c.managerOrNull;
-            return Stack(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: body),
-                    if (c.isOpen) ...[
-                      TerminalPanelResizer(controller: c),
-                      SizedBox(
-                        width: c.width,
-                        child: manager == null
-                            ? const ColoredBox(color: kOsnPanelBg)
-                            : TerminalPanel(manager: manager),
-                      ),
-                    ],
-                  ],
-                ),
-                Positioned(
-                  right: c.isOpen ? c.width + 20 : 20,
-                  bottom: 56,
-                  child: TerminalToggleButton(controller: c),
-                ),
-              ],
-            );
-          },
+        child: Row(
+          children: [
+            Expanded(child: body),
+            const TerminalPanelHost(),
+          ],
         ),
       ),
     );
