@@ -208,7 +208,10 @@ jobs:
   build-windows:
     needs: [check, prepare]
     if: needs.check.outputs.should_build == 'true' && (github.event.inputs.only == 'all' || github.event.inputs.only == 'windows' || github.event.inputs.only == '')
-    runs-on: windows-2019
+    # OSN: `windows-2019` è stato ritirato da GitHub Actions (mid-2025): un job che
+    # lo richiede resta `queued` all'infinito (nessun runner disponibile). Usiamo
+    # l'immagine supportata corrente. Vedi OSN_PATCHES.md.
+    runs-on: windows-2022
     env:
       VERSION: ${{ needs.check.outputs.version }}
       RELEASE_PATH: frontend\appflowy_flutter\product\${{ needs.check.outputs.version }}\windows
