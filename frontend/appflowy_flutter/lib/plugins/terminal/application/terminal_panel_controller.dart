@@ -122,9 +122,8 @@ class TerminalPanelController extends ChangeNotifier {
         workingDir: dir,
         skipPermissionsByDefault: _skipPermissionsByDefault,
       );
-      if (_manager!.sessions.isEmpty) {
-        _manager!.newSession();
-      }
+      // Ripristina le sessioni persistite (con resume) o ne crea una nuova.
+      await _manager!.restoreOrCreate();
       notifyListeners();
     } catch (e) {
       debugPrint('TerminalPanelController: bootstrap fallito: $e');
