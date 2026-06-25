@@ -19,7 +19,7 @@ Tutti i path sono relativi a `frontend/appflowy_flutter/`.
 ### Tema Notion / chrome monocromatica
 | File | Modifica | Rischio |
 |---|---|---|
-| `packages/appflowy_ui/lib/src/theme/data/appflowy_default/semantic.dart` | token palette → monocromo Notion (hardcoded, soprattutto `dark()`) | **ALTO** |
+| `lib/startup/tasks/app_widget.dart` | hook tema: `AppFlowyDefaultTheme()` → `OsnAppFlowyTheme()` (1 riga + 1 import) | BASSO |
 | `lib/workspace/application/settings/appearance/base_appearance.dart` | font default `Geist`/`Geist Mono` | MEDIO |
 | `lib/plugins/shared/share/_shared.dart` | pulsante Share come sola icona | **ALTO** |
 | `lib/workspace/presentation/home/menu/sidebar/footer/sidebar_footer.dart` | rimozione divider + resize icone | **ALTO** |
@@ -59,6 +59,10 @@ Tutti i path sono relativi a `frontend/appflowy_flutter/`.
 | `macos/Runner/Assets.xcassets/AppIcon.appiconset/*.png` | icona app monocroma | BASSO (binari) |
 
 ## File NUOVI (basso rischio rebase — solo aggiunte)
+- `lib/osn/theme/osn_appflowy_theme.dart` — **tema Notion** come `AppFlowyThemeBuilder` che
+  **delega** ad `AppFlowyDefaultTheme` e sovrascrive solo i token osn (i non-osn sono ereditati dal
+  default → upstream-proof). Sostituisce l'ex patch da ~105 righe dentro `appflowy_ui/.../semantic.dart`
+  (ora **vanilla**). Test di non-regressione in `test/osn/osn_theme_test.dart`.
 - `lib/plugins/terminal/**` — feature terminale embeddato (self-contained).
 - `lib/plugins/terminal/application/terminal_cli_config.dart` — preset/config harness CLI.
 - `lib/plugins/terminal/presentation/settings_agent_cli_view.dart` — pagina Impostazioni "Agent CLI".
@@ -67,6 +71,39 @@ Tutti i path sono relativi a `frontend/appflowy_flutter/`.
 - `assets/google_fonts/Geist*/**` — font bundlati.
 
 ## Punti di attrito noti (da review multi-agente, 2026-06-25)
-1. `semantic.dart` — candidato a refactor in un `ThemeExtension`/builder separato per non toccare il file upstream.
-2. Header preferiti (`document.dart`/`tab_bar_view.dart`) — sostitutivo; valutare versione additiva (affiancare invece di rimpiazzare). `chat.dart` non è uniformato.
+1. ~~`semantic.dart`~~ — **RISOLTO 2026-06-25**: estratto in `lib/osn/theme/osn_appflowy_theme.dart`
+   (delega + override). Il file upstream è tornato **vanilla**: zero conflitto sul tema.
+2. Header preferiti (`document.dart`/`tab_bar_view.dart`) — **sostitutivo** (`ViewFavoriteButton` →
+   `TerminalHeaderButton`). Tenuto così di proposito: la versione "additiva" reintrodurrebbe la stella
+   nell'header (l'utente vuole il solo ✨). Attrito accettato: MEDIO ma piccolo (≈14 righe, marcate `// OSN:`).
+   `chat.dart` non è uniformato.
 3. `pubspec.yaml` `version` bump — confligge a ogni release upstream (cosmetico).
+
+## Procedura di rebase su un nuovo tag upstream
+
+Il branch `osn` è una **serie di patch** sopra un tag upstream. Per allinearsi a `X.Y.Z`:
+
+```sh
+cd ~/work/AppFlowy
+git fetch upstream --tags
+OLD=0.12.5            # tag su cui osn è attualmente basato (vedi sopra: "Base corrente")
+NEW=X.Y.Z            # nuovo tag upstream
+
+git switch osn && git branch osn-backup-$OLD     # rete di sicurezza
+git rebase --onto "$NEW" "$OLD" osn              # riapplica SOLO i commit osn sul nuovo tag
+```
+
+Durante il rebase, ad ogni conflitto:
+- **lock file** (`pubspec.lock`, `macos/Podfile.lock`): `git checkout --theirs <file>` poi rigenera a
+  fine rebase con `flutter pub get` + `cd macos && pod install`. **Mai** risolverli a mano.
+- **file con marcatori `// OSN:`**: tieni la riga osn accanto a quella upstream nuova (triage rapido).
+- **tema**: non dovrebbe più confliggere (è in `lib/osn/theme/**`); se cambia l'**interfaccia**
+  `AppFlowyThemeBuilder` o un costruttore di scheme, `OsnAppFlowyTheme` non compila → adegua lì.
+
+Dopo il rebase, **verifica di non-regressione** (in `frontend/appflowy_flutter/`):
+```sh
+flutter pub get && dart analyze lib/osn lib/plugins/terminal lib/startup/tasks/app_widget.dart
+flutter test test/osn test/terminal           # tema + bootstrap terminale
+flutter build macos --debug                    # compilazione end-to-end
+```
+Infine aggiorna `OLD` → `$NEW` nella riga "Base corrente" in cima a questo file e il `version` in `pubspec.yaml`.
